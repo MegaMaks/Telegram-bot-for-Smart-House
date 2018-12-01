@@ -15,6 +15,7 @@ using System.Data;
 using System.IO.Ports;
 using System.Net.Sockets;
 using System.Net;
+using System.Threading;
 
 namespace ConsoleTelegram
 {
@@ -25,6 +26,7 @@ namespace ConsoleTelegram
         private static readonly TelegramBotClient Bot = new TelegramBotClient("550808830:AAERRZ0qIsXIdgMTgksg2tcA0DQeWqL3r5g");
 
         static byte[] lightStatus = new byte[2] { 0x02, 0x00 };
+
         static List<Lamp> lamps = new List<Lamp>
         {
             new Lamp(),
@@ -36,29 +38,42 @@ namespace ConsoleTelegram
             new Lamp(),
             new Lamp(),
         };
+
+
+        static List<int> accesslist = new List<int>() { 352840946 , 129973487 };
+
+
         static IPAddress  Ipadress {get;}=IPAddress.Parse("192.168.88.10");
         static int Port { get; } = 80;
 
         static void Main(string[] args)
         {
+            while (true)
+            {
+                try
+                {
+                    var me = Bot.GetMeAsync().Result;
+                    Console.Title = me.Username;
 
-            //lamps[0].Statuslamp = 0;
-            //lamps[0].Iconlamp = "⚪️";
-            
-            var me = Bot.GetMeAsync().Result;
-            Console.Title = me.Username;
+                    Bot.OnMessage += BotOnMessageReceived;
+                    Bot.OnMessageEdited += BotOnMessageReceived;
+                    Bot.OnCallbackQuery += BotOnCallbackQueryReceived;
+                    Bot.OnInlineQuery += BotOnInlineQueryReceived;
+                    Bot.OnInlineResultChosen += BotOnChosenInlineResultReceived;
+                    Bot.OnReceiveError += BotOnReceiveError;
 
-            Bot.OnMessage += BotOnMessageReceived;
-            Bot.OnMessageEdited += BotOnMessageReceived;
-            Bot.OnCallbackQuery += BotOnCallbackQueryReceived;
-            Bot.OnInlineQuery += BotOnInlineQueryReceived;
-            Bot.OnInlineResultChosen += BotOnChosenInlineResultReceived;
-            Bot.OnReceiveError += BotOnReceiveError;
-
-            Bot.StartReceiving();
-            Console.WriteLine($"Start listening for @{me.Username}");
-            Console.ReadLine();
-            Bot.StopReceiving();
+                    Bot.StartReceiving();
+                    Console.WriteLine($"Start listening for @{me.Username}");
+                    Console.ReadLine();
+                    Bot.StopReceiving();
+                }
+                catch(Exception e)
+                {
+                    Console.WriteLine(e.ToString());
+                    Thread.Sleep(10000);
+                    
+                }
+            }
         }
 
 
@@ -75,10 +90,15 @@ namespace ConsoleTelegram
 
         private static async void BotOnMessageReceived(object sender, MessageEventArgs messageEventArgs)
         {
-            
+            bool accessuser = false;
             var message = messageEventArgs.Message;
 
-            if (message == null || message.Type != MessageType.Text) return;
+            foreach (var item in accesslist)
+            {
+                if (message.From.Id == item) accessuser = true;
+            }
+
+            if (message == null || message.Type != MessageType.Text||accessuser==false) return;
 
             switch (message.Text)
             {
@@ -146,36 +166,8 @@ namespace ConsoleTelegram
                         }
                     }
 
-                  var inlineLight = new InlineKeyboardMarkup(new[]
-                  {
-                        new []
-                        {
-                            
-                            InlineKeyboardButton.WithCallbackData($"{lamps[0].Iconlamp} Гостинная","living"),
-                            InlineKeyboardButton.WithCallbackData($"{lamps[1].Iconlamp} Спальня","sleeping"),
-                        },
-                        new []
-                        {
-                            InlineKeyboardButton.WithCallbackData($"{lamps[2].Iconlamp} Кухня","kitchen"),
-                            InlineKeyboardButton.WithCallbackData($"{lamps[3].Iconlamp} Детская","child"),
-                        },
-                        new []
-                        {
-                            InlineKeyboardButton.WithCallbackData($"{lamps[4].Iconlamp} Коридор","hall"),
-                            InlineKeyboardButton.WithCallbackData($"{lamps[5].Iconlamp} Ванная","bath"),
-                        },
-                        new []
-                        {
-                            InlineKeyboardButton.WithCallbackData($"{lamps[6].Iconlamp} Подвал","ground"),
-                            InlineKeyboardButton.WithCallbackData($"{lamps[7].Iconlamp} Уличный","street"),
-                        },
-                        new []
-                        {
-                            InlineKeyboardButton.WithCallbackData($"💡 Режимы освещения","lightmode"),
-                        },
 
-                    });
-
+                    var inlineLight = KeyLightInit();
 
                     await Bot.SendTextMessageAsync(
                         message.Chat.Id,
@@ -229,6 +221,40 @@ Usage:
             }
         }
 
+        private static InlineKeyboardMarkup KeyLightInit()
+        {
+            var inlineLight = new InlineKeyboardMarkup(new[]
+{
+                        new []
+                        {
+
+                            InlineKeyboardButton.WithCallbackData($"{lamps[0].Iconlamp} Не работает","living"),
+                            InlineKeyboardButton.WithCallbackData($"{lamps[1].Iconlamp} Гостинная","sleeping"),
+                        },
+                        new []
+                        {
+                            InlineKeyboardButton.WithCallbackData($"{lamps[2].Iconlamp} Кухня","kitchen"),
+                            InlineKeyboardButton.WithCallbackData($"{lamps[3].Iconlamp} Детская","child"),
+                        },
+                        new []
+                        {
+                            InlineKeyboardButton.WithCallbackData($"{lamps[4].Iconlamp} Коридор","hall"),
+                            InlineKeyboardButton.WithCallbackData($"{lamps[5].Iconlamp} Ванная","bath"),
+                        },
+                        new []
+                        {
+                            InlineKeyboardButton.WithCallbackData($"{lamps[6].Iconlamp} Кабинет","study"),
+                            InlineKeyboardButton.WithCallbackData($"{lamps[7].Iconlamp} Уличный","street"),
+                        },
+                        new []
+                        {
+                            InlineKeyboardButton.WithCallbackData($"💡 Режимы освещения","lightmode"),
+                        },
+
+                    });
+            return inlineLight;
+        }
+
 
         private static async void BotOnCallbackQueryReceived(object sender, CallbackQueryEventArgs callbackQueryEventArgs)
         {
@@ -266,7 +292,7 @@ Usage:
                     case "bath":
                         await LightSelect(5, callbackQuery);
                         break;
-                    case "ground":
+                    case "study":
                         await LightSelect(6, callbackQuery);
                         break;
 
@@ -281,47 +307,8 @@ Usage:
                 
             }
         }
-
-
-        private static async Task DimmerLamp(int idlamp, Telegram.Bot.Types.CallbackQuery callbackQuery)
-        {
-            string sqlstr = ConfigurationManager.ConnectionStrings["cnStrJarvis"].ConnectionString;
-            DataTable t = new DataTable();
-            JarvisDAL JDAL = new JarvisDAL();
-
-            JDAL.OpenConnection();
-            t = JDAL.Sellamp(idlamp);
-            int lampdimmer = (int)t.Rows[0]["dimmer"];
-            JDAL.CloseConnection();
-
-            string DimmerSetting = $@"
-Текущая яркость {lampdimmer} %";
-
-            var inlineDimmerSetting = new InlineKeyboardMarkup(new[]
-           {
-                        new [] // first row
-                        {
-                            InlineKeyboardButton.WithCallbackData("⬇️","lightdown"),
-                            InlineKeyboardButton.WithCallbackData("⬆️","lightup"),
-                        },
-                        new [] // first row
-                        {
-                            InlineKeyboardButton.WithCallbackData("☀️ Максимальная яркость","lightfull"),
-                        },
-
-                    });
-
-            await Bot.SendTextMessageAsync(
-                callbackQuery.Message.Chat.Id,
-                DimmerSetting,
-                replyMarkup: inlineDimmerSetting);
-        }
-
-
-
-
-
-        private static async Task LightSelect(int idlamp, Telegram.Bot.Types.CallbackQuery callbackQuery)
+        
+         private static async Task LightSelect(int idlamp, Telegram.Bot.Types.CallbackQuery callbackQuery)
         {
             TcpClient newClient = new TcpClient();
             byte[] lightChange = new byte[2] { 0x01, 0x00 };
@@ -350,41 +337,14 @@ Usage:
             string changesleepinglamp = $@"Управление освещением";
 
 
-            var inlineLight = new InlineKeyboardMarkup(new[]
-            {
-                                                new []
-                        {
-
-                            InlineKeyboardButton.WithCallbackData($"{lamps[0].Iconlamp} Гостинная","living"),
-                            InlineKeyboardButton.WithCallbackData($"{lamps[1].Iconlamp} Спальня","sleeping"),
-                        },
-                        new []
-                        {
-                            InlineKeyboardButton.WithCallbackData($"{lamps[2].Iconlamp} Кухня","kitchen"),
-                            InlineKeyboardButton.WithCallbackData($"{lamps[3].Iconlamp} Детская","child"),
-                        },
-                        new []
-                        {
-                            InlineKeyboardButton.WithCallbackData($"{lamps[4].Iconlamp} Коридор","hall"),
-                            InlineKeyboardButton.WithCallbackData($"{lamps[5].Iconlamp} Ванная","bath"),
-                        },
-                        new []
-                        {
-                            InlineKeyboardButton.WithCallbackData($"{lamps[6].Iconlamp} Подвал","ground"),
-                            InlineKeyboardButton.WithCallbackData($"{lamps[7].Iconlamp} Уличный","street"),
-                        },
-                        new []
-                        {
-                            InlineKeyboardButton.WithCallbackData($"💡 Режимы освещения","lightmode"),
-                        },
-
-                    });
+            var inlineLight = KeyLightInit();
 
             await Bot.EditMessageTextAsync(callbackQuery.Message.Chat.Id,
                 callbackQuery.Message.MessageId,
                 changesleepinglamp,
                 replyMarkup: inlineLight);
         }
+
 
         private static async void BotOnInlineQueryReceived(object sender, InlineQueryEventArgs inlineQueryEventArgs)
         {
