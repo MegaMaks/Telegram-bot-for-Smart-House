@@ -53,6 +53,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ComPort.cs" />
+    <Compile Include="Device.cs" />
     <Compile Include="JarvisDAL.cs" />
     <Compile Include="Lamp.cs" />
     <Compile Include="Program.cs" />

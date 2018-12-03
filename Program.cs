@@ -2,20 +2,17 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
-using System.Text;
 using System.Threading.Tasks;
 using Telegram.Bot.Args;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.InlineQueryResults;
 using Telegram.Bot.Types.ReplyMarkups;
 using Telegram.Bot;
-using System.Data.SqlClient;
-using System.Configuration;
-using System.Data;
-using System.IO.Ports;
 using System.Net.Sockets;
 using System.Net;
 using System.Threading;
+using System.Timers;
+using Timer = System.Timers.Timer;
 
 namespace ConsoleTelegram
 {
@@ -26,6 +23,7 @@ namespace ConsoleTelegram
         private static readonly TelegramBotClient Bot = new TelegramBotClient("550808830:AAERRZ0qIsXIdgMTgksg2tcA0DQeWqL3r5g");
 
         static byte[] lightStatus = new byte[2] { 0x02, 0x00 };
+        static Timer timer;
 
         static List<Lamp> lamps = new List<Lamp>
         {
@@ -46,6 +44,12 @@ namespace ConsoleTelegram
         static IPAddress  Ipadress {get;}=IPAddress.Parse("192.168.88.10");
         static int Port { get; } = 80;
 
+        private static readonly ManualResetEvent _ResetEvent =   new ManualResetEvent(false);
+
+        private static bool statusAutoOff = false;
+        private static bool statusLightinNight = false;
+        private static bool statusPrecence = false;
+
         static void Main(string[] args)
         {
             while (true)
@@ -64,6 +68,14 @@ namespace ConsoleTelegram
 
                     Bot.StartReceiving();
                     Console.WriteLine($"Start listening for @{me.Username}");
+
+
+                    timer = new Timer();
+                    timer.AutoReset = true;
+                    timer.Interval = 30000;
+                    timer.Elapsed += new ElapsedEventHandler(LightCheck);
+                    timer.Enabled = true;                   
+                
                     Console.ReadLine();
                     Bot.StopReceiving();
                 }
@@ -100,34 +112,12 @@ namespace ConsoleTelegram
 
             if (message == null || message.Type != MessageType.Text||accessuser==false) return;
 
+           
+
             switch (message.Text)
             {
-                case "/inline":
-                    await Bot.SendChatActionAsync(message.Chat.Id, ChatAction.Typing);
 
-                    await Task.Delay(500); // simulate longer running task
 
-                    var inlineKeyboard = new InlineKeyboardMarkup(new[]
-                    {
-                        new [] // first row
-                        {
-                            InlineKeyboardButton.WithCallbackData("1.1"),
-                            InlineKeyboardButton.WithCallbackData("1.2"),
-                        },
-                        new [] // second row
-                        {
-                            InlineKeyboardButton.WithCallbackData("2.1"),
-                            InlineKeyboardButton.WithCallbackData("2.2"),
-                        }
-                    });
-
-                    await Bot.SendTextMessageAsync(
-                        message.Chat.Id,
-                        "Choose",
-                        replyMarkup: inlineKeyboard);
-                    break;
-
-                // send custom keyboard
                 case "/start":
                     ReplyKeyboardMarkup ReplyKeyboard = new[]
                     {
@@ -156,13 +146,13 @@ namespace ConsoleTelegram
                     {
                         if (((bt >> i) & 1) != 0)
                         {
-                            lamps[i].Statuslamp = 1;
-                            lamps[i].Iconlamp ="🎾";
+                            lamps[i].Status = 1;
+                            //lamps[i].Iconlamp ="🎾";
                         }
                         else
                         {
-                            lamps[i].Statuslamp = 0;
-                            lamps[i].Iconlamp = "⚪️";
+                            lamps[i].Status = 0;
+                            //lamps[i].Iconlamp = "⚪️";
                         }
                     }
 
@@ -208,9 +198,7 @@ namespace ConsoleTelegram
                     break;
 
                 default:
-                    const string usage = @"
-Usage:
-/start - send custom keyboard";
+                    const string usage = @"Usage:/start";
 
 
                     await Bot.SendTextMessageAsync(
@@ -228,23 +216,23 @@ Usage:
                         new []
                         {
 
-                            InlineKeyboardButton.WithCallbackData($"{lamps[0].Iconlamp} Не работает","living"),
-                            InlineKeyboardButton.WithCallbackData($"{lamps[1].Iconlamp} Гостинная","sleeping"),
+                            InlineKeyboardButton.WithCallbackData($"{lamps[0].IconCurrent} Гостинная","living"),
+                            InlineKeyboardButton.WithCallbackData($"{lamps[1].IconCurrent} Кабинет","study"),
                         },
                         new []
                         {
-                            InlineKeyboardButton.WithCallbackData($"{lamps[2].Iconlamp} Кухня","kitchen"),
-                            InlineKeyboardButton.WithCallbackData($"{lamps[3].Iconlamp} Детская","child"),
+                            InlineKeyboardButton.WithCallbackData($"{lamps[2].IconCurrent} Кухня","kitchen"),
+                            InlineKeyboardButton.WithCallbackData($"{lamps[3].IconCurrent} Детская","child"),
                         },
                         new []
                         {
-                            InlineKeyboardButton.WithCallbackData($"{lamps[4].Iconlamp} Коридор","hall"),
-                            InlineKeyboardButton.WithCallbackData($"{lamps[5].Iconlamp} Ванная","bath"),
+                            InlineKeyboardButton.WithCallbackData($"{lamps[4].IconCurrent} Коридор","hall"),
+                            InlineKeyboardButton.WithCallbackData($"{lamps[5].IconCurrent} Ванная","bath"),
                         },
                         new []
                         {
-                            InlineKeyboardButton.WithCallbackData($"{lamps[6].Iconlamp} Кабинет","study"),
-                            InlineKeyboardButton.WithCallbackData($"{lamps[7].Iconlamp} Уличный","street"),
+                            InlineKeyboardButton.WithCallbackData($"{lamps[6].IconCurrent} Не работает","nobody"),
+                            InlineKeyboardButton.WithCallbackData($"{lamps[7].IconCurrent} Уличный","street"),
                         },
                         new []
                         {
@@ -264,7 +252,6 @@ Usage:
             if (callbackQuery == null || callbackQuery.Message.Type != MessageType.Text) return;
             try
             {
-                //was message.Text.Split(' ').First()
                 switch (callbackQuery.Data)
                 {
                     //Освещение
@@ -273,7 +260,7 @@ Usage:
                         break;
 
 
-                    case "sleeping":
+                    case "study":
                         await LightSelect(1, callbackQuery);
                         break;
 
@@ -292,13 +279,14 @@ Usage:
                     case "bath":
                         await LightSelect(5, callbackQuery);
                         break;
-                    case "study":
-                        await LightSelect(6, callbackQuery);
-                        break;
 
                     case "street":
                         await LightSelect(7, callbackQuery);
                         break;
+
+                    case "lightmode":
+                        await LightSettings(callbackQuery);
+                       break;
 
                 }
             }
@@ -307,8 +295,34 @@ Usage:
                 
             }
         }
-        
-         private static async Task LightSelect(int idlamp, Telegram.Bot.Types.CallbackQuery callbackQuery)
+        private static async Task LightSettings(Telegram.Bot.Types.CallbackQuery callbackQuery)
+        {
+            string ClimateSetting = $@"Режимы освещения";
+
+            var inlineLightSetting = new InlineKeyboardMarkup(new[]
+           {
+                        new []
+                        {
+                            InlineKeyboardButton.WithCallbackData("Эффект присутствия","presence"),
+                        },
+                        new []
+                        {
+                            InlineKeyboardButton.WithCallbackData("Автовыключение света","autoshut"),
+                        },
+                        new []
+                        {
+                            InlineKeyboardButton.WithCallbackData("Свет в ночи","lightinnihgt"),
+                        },
+
+                    });
+
+            await Bot.SendTextMessageAsync(
+                callbackQuery.Message.Chat.Id,
+                ClimateSetting,
+                replyMarkup: inlineLightSetting);
+        }
+
+        private static async Task LightSelect(int idlamp, Telegram.Bot.Types.CallbackQuery callbackQuery)
         {
             TcpClient newClient = new TcpClient();
             byte[] lightChange = new byte[2] { 0x01, 0x00 };
@@ -323,15 +337,15 @@ Usage:
             newClient.Close();
             if (bt == btget)
             {
-                if (lamps[idlamp].Statuslamp == 0)
+                if (lamps[idlamp].Status == 0)
                 {
-                        lamps[idlamp].Statuslamp = 1;
-                        lamps[idlamp].Iconlamp = "🎾";
+                        lamps[idlamp].Status = 1;
+                        //lamps[idlamp].Iconlamp = "🎾";
                 }
                 else
                 {
-                    lamps[idlamp].Statuslamp = 0;
-                    lamps[idlamp].Iconlamp = "⚪️";
+                    lamps[idlamp].Status = 0;
+                    //lamps[idlamp].Iconlamp = "⚪️";
                 }
             }
             string changesleepinglamp = $@"Управление освещением";
@@ -392,6 +406,36 @@ Usage:
             Console.WriteLine("Received error: {0} — {1}",
                 receiveErrorEventArgs.ApiRequestException.ErrorCode,
                 receiveErrorEventArgs.ApiRequestException.Message);
+        }
+
+        private static void LightCheck(object sender, ElapsedEventArgs eventArgs)
+        {
+            //TcpClient newClient = new TcpClient();
+            //newClient.Connect(Ipadress, Port);
+            //byte bt = SendCMD(newClient, lightStatus);
+            //newClient.Close();
+            string statusHome = $@"
+
+🌡 Система отопления:
+Давление в системе: 1.9 атм.
+Температура теплоносителя:  °C
+
+🚰 Система водоснабжения:
+Давление в системе: 2.3 атм.
+Температура горячей воды  °C
+
+🚽 Септик заполнен на 45%
+
+🛎 Тревожные сообщения: нет";
+            Console.WriteLine("exxxyyy");
+            SendMessageToChat(statusHome);
+        }
+
+        private static async void SendMessageToChat(string msg)
+        {
+            await Bot.SendTextMessageAsync(129973487, msg);
+            
+
         }
     }
 }
