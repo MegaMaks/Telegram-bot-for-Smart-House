@@ -56,6 +56,7 @@
     <Compile Include="Device.cs" />
     <Compile Include="JarvisDAL.cs" />
     <Compile Include="Lamp.cs" />
+    <Compile Include="LightMode.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

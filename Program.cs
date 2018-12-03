@@ -36,6 +36,9 @@ namespace ConsoleTelegram
             new Lamp(),
             new Lamp(),
         };
+        static LightinNight lightintight = new LightinNight();
+        static PresenceEff presenceeffect = new PresenceEff();
+        static AutoOff autooff = new AutoOff();
 
 
         static List<int> accesslist = new List<int>() { 352840946 , 129973487 };
@@ -43,12 +46,6 @@ namespace ConsoleTelegram
 
         static IPAddress  Ipadress {get;}=IPAddress.Parse("192.168.88.10");
         static int Port { get; } = 80;
-
-        private static readonly ManualResetEvent _ResetEvent =   new ManualResetEvent(false);
-
-        private static bool statusAutoOff = false;
-        private static bool statusLightinNight = false;
-        private static bool statusPrecence = false;
 
         static void Main(string[] args)
         {
@@ -217,26 +214,47 @@ namespace ConsoleTelegram
                         {
 
                             InlineKeyboardButton.WithCallbackData($"{lamps[0].IconCurrent} Гостинная","living"),
-                            InlineKeyboardButton.WithCallbackData($"{lamps[1].IconCurrent} Кабинет","study"),
+                            InlineKeyboardButton.WithCallbackData($"{lamps[1].IconCurrent}   Кабинет","study"),
                         },
                         new []
                         {
-                            InlineKeyboardButton.WithCallbackData($"{lamps[2].IconCurrent} Кухня","kitchen"),
-                            InlineKeyboardButton.WithCallbackData($"{lamps[3].IconCurrent} Детская","child"),
+                            InlineKeyboardButton.WithCallbackData($"{lamps[2].IconCurrent}         Кухня","kitchen"),
+                            InlineKeyboardButton.WithCallbackData($"{lamps[3].IconCurrent}   Детская","child"),
                         },
                         new []
                         {
-                            InlineKeyboardButton.WithCallbackData($"{lamps[4].IconCurrent} Коридор","hall"),
-                            InlineKeyboardButton.WithCallbackData($"{lamps[5].IconCurrent} Ванная","bath"),
+                            InlineKeyboardButton.WithCallbackData($"{lamps[4].IconCurrent}   Коридор","hall"),
+                            InlineKeyboardButton.WithCallbackData($"{lamps[5].IconCurrent}    Ванная","bath"),
                         },
                         new []
                         {
-                            InlineKeyboardButton.WithCallbackData($"{lamps[6].IconCurrent} Не работает","nobody"),
+                            InlineKeyboardButton.WithCallbackData($"{lamps[6].IconCurrent} Прихожая","nobody"),
                             InlineKeyboardButton.WithCallbackData($"{lamps[7].IconCurrent} Уличный","street"),
                         },
                         new []
                         {
                             InlineKeyboardButton.WithCallbackData($"💡 Режимы освещения","lightmode"),
+                        },
+
+                    });
+            return inlineLight;
+        }
+
+        private static InlineKeyboardMarkup KeyLightMode()
+        {
+            var inlineLight = new InlineKeyboardMarkup(new[]
+{
+                        new []
+                        {
+                            InlineKeyboardButton.WithCallbackData($"{presenceeffect.IconCurrent} Эффект присутствия","presence"),
+                        },
+                        new []
+                        {
+                            InlineKeyboardButton.WithCallbackData($"{autooff.IconCurrent}        Автовыкл. света","autoshut"),
+                        },
+                        new []
+                        {
+                            InlineKeyboardButton.WithCallbackData($"{lightintight.IconCurrent}                  Свет в ночи","lightinnihgt"),
                         },
 
                     });
@@ -287,7 +305,12 @@ namespace ConsoleTelegram
                     case "lightmode":
                         await LightSettings(callbackQuery);
                        break;
-
+                    case "autoshut":
+                        await EditAutoShut(callbackQuery);
+                        break;
+                    case "lightinnihgt":
+                        await EditLightinNight(callbackQuery);
+                        break;
                 }
             }
             catch
@@ -295,30 +318,43 @@ namespace ConsoleTelegram
                 
             }
         }
+
+        private static async Task EditAutoShut(Telegram.Bot.Types.CallbackQuery callbackQuery)
+        {
+            string lightsetting = $@"Режимы освещения";
+            if (autooff.Status == 0) autooff.Status = 1;
+            else autooff.Status = 0;
+
+            var inlineLightSetting = KeyLightMode();
+
+            await Bot.EditMessageTextAsync(
+                callbackQuery.Message.Chat.Id,
+                callbackQuery.Message.MessageId,
+                lightsetting,
+                replyMarkup: inlineLightSetting);
+        }
+
+        private static async Task EditLightinNight(Telegram.Bot.Types.CallbackQuery callbackQuery)
+        {
+            string lightsetting = $@"Режимы освещения";
+            if (lightintight.Status == 0) lightintight.Status = 1;
+            else lightintight.Status = 0;
+
+            var inlineLightSetting = KeyLightMode();
+
+            await Bot.EditMessageTextAsync(
+                callbackQuery.Message.Chat.Id,
+                callbackQuery.Message.MessageId,
+                lightsetting,
+                replyMarkup: inlineLightSetting);
+        }
         private static async Task LightSettings(Telegram.Bot.Types.CallbackQuery callbackQuery)
         {
-            string ClimateSetting = $@"Режимы освещения";
-
-            var inlineLightSetting = new InlineKeyboardMarkup(new[]
-           {
-                        new []
-                        {
-                            InlineKeyboardButton.WithCallbackData("Эффект присутствия","presence"),
-                        },
-                        new []
-                        {
-                            InlineKeyboardButton.WithCallbackData("Автовыключение света","autoshut"),
-                        },
-                        new []
-                        {
-                            InlineKeyboardButton.WithCallbackData("Свет в ночи","lightinnihgt"),
-                        },
-
-                    });
-
+            string lightsetting = $@"Режимы освещения";
+            var inlineLightSetting = KeyLightMode();
             await Bot.SendTextMessageAsync(
                 callbackQuery.Message.Chat.Id,
-                ClimateSetting,
+                lightsetting,
                 replyMarkup: inlineLightSetting);
         }
 
