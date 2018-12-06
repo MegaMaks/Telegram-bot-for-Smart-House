@@ -66,7 +66,6 @@ namespace ConsoleTelegram
                     Bot.StartReceiving();
                     Console.WriteLine($"Start listening for @{me.Username}");
 
-
                     timer = new Timer();
                     timer.AutoReset = true;
                     timer.Interval = 60000;
@@ -85,8 +84,6 @@ namespace ConsoleTelegram
             }
         }
 
-
-
         private static byte SendCMD(TcpClient newClient,byte[] sendBytes)
         {
             NetworkStream tcpStream = newClient.GetStream();
@@ -97,7 +94,7 @@ namespace ConsoleTelegram
             return bytes[1];
         }
 
-        private static async void BotOnMessageReceived(object sender, MessageEventArgs messageEventArgs)
+        private static void BotOnMessageReceived(object sender, MessageEventArgs messageEventArgs)
         {
             bool accessuser = false;
             var message = messageEventArgs.Message;
@@ -109,27 +106,14 @@ namespace ConsoleTelegram
 
             if (message == null || message.Type != MessageType.Text||accessuser==false) return;
 
-           
-
             switch (message.Text)
             {
-
-
                 case "/start":
-                    ReplyKeyboardMarkup ReplyKeyboard = new[]
-                    {
-                        new[] { "🌓 Освещение", "⛈ Климат" },
-                        new[] { "🛡 Безопасность", "🏠 Состояние дома" },
-
-                    };
+                    string FirstMsg = $@"Выберите категорию";
+                    var ReplyKeyboard = Views.ViewLightBot.MainMenu();
                     ReplyKeyboard.ResizeKeyboard = true;
-
-                    await Bot.SendTextMessageAsync(
-                        message.Chat.Id,
-                        "Выберите",
-                        replyMarkup: ReplyKeyboard);
+                    Views.ViewLightBot.SendKeyboartToChat(Bot, FirstMsg, message, ReplyKeyboard);
                     break;
-
 
                 case "🌓 Освещение":
                     string LightHome = $@"Управление освещением";
@@ -138,134 +122,32 @@ namespace ConsoleTelegram
                     byte bt =SendCMD(newClient,lightStatus);
                     newClient.Close();
 
-
                     for (int i = 0; i < 8; i++)
                     {
                         if (((bt >> i) & 1) != 0)
                         {
                             lamps[i].Status = 1;
-                            //lamps[i].Iconlamp ="🎾";
                         }
                         else
                         {
                             lamps[i].Status = 0;
-                            //lamps[i].Iconlamp = "⚪️";
                         }
                     }
 
-
-                    var inlineLight = KeyLightInit();
-
-                    await Bot.SendTextMessageAsync(
-                        message.Chat.Id,
-                        LightHome,
-                        replyMarkup: inlineLight);
+                    var inlineLight =Views.ViewLightBot.KeyLightInit(lamps);
+                    Views.ViewLightBot.SendMessageToChat(Bot, LightHome, message, inlineLight);
                     break;
 
-
-                // send a photo
-                case "/photo":
-                    await Bot.SendChatActionAsync(message.Chat.Id, ChatAction.UploadPhoto);
-
-                    const string file = @"123.jpg";
-
-                    var fileName = file.Split(Path.DirectorySeparatorChar).Last();
-
-                    using (var fileStream = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.Read))
-                    {
-                        await Bot.SendPhotoAsync(
-                            message.Chat.Id,
-                            fileStream,
-                            "Nice Picture");
-                    }
-                    break;
-
-                // request location or contact
-                case "/request":
-                    var RequestReplyKeyboard = new ReplyKeyboardMarkup(new[]
-                    {
-                        KeyboardButton.WithRequestLocation("Location"),
-                        KeyboardButton.WithRequestContact("Contact"),
-                    });
-
-                    await Bot.SendTextMessageAsync(
-                        message.Chat.Id,
-                        "Who or Where are you?",
-                        replyMarkup: RequestReplyKeyboard);
-                    break;
-
-                default:
-                    const string usage = @"Usage:/start";
-
-
-                    await Bot.SendTextMessageAsync(
-                        message.Chat.Id,
-                        usage,
-                        replyMarkup: new ReplyKeyboardRemove());
+                    default:
+                    const string starttext = @"Usage:/start";
+                    Views.ViewLightBot.SendMessageToChat(Bot, starttext, message, null);
                     break;
             }
         }
 
-        private static InlineKeyboardMarkup KeyLightInit()
-        {
-            var inlineLight = new InlineKeyboardMarkup(new[]
-{
-                        new []
-                        {
-
-                            InlineKeyboardButton.WithCallbackData($"{lamps[0].IconCurrent} Гостинная","living"),
-                            InlineKeyboardButton.WithCallbackData($"{lamps[1].IconCurrent}   Кабинет","study"),
-                        },
-                        new []
-                        {
-                            InlineKeyboardButton.WithCallbackData($"{lamps[2].IconCurrent}         Кухня","kitchen"),
-                            InlineKeyboardButton.WithCallbackData($"{lamps[3].IconCurrent}   Детская","child"),
-                        },
-                        new []
-                        {
-                            InlineKeyboardButton.WithCallbackData($"{lamps[4].IconCurrent}   Коридор","hall"),
-                            InlineKeyboardButton.WithCallbackData($"{lamps[5].IconCurrent}    Ванная","bath"),
-                        },
-                        new []
-                        {
-                            InlineKeyboardButton.WithCallbackData($"{lamps[6].IconCurrent} Прихожая","nobody"),
-                            InlineKeyboardButton.WithCallbackData($"{lamps[7].IconCurrent} Уличный","street"),
-                        },
-                        new []
-                        {
-                            InlineKeyboardButton.WithCallbackData($"💡 Режимы освещения","lightmode"),
-                        },
-
-                    });
-            return inlineLight;
-        }
-
-        private static InlineKeyboardMarkup KeyLightMode()
-        {
-            var inlineLight = new InlineKeyboardMarkup(new[]
-{
-                        new []
-                        {
-                            InlineKeyboardButton.WithCallbackData($"{presenceeffect.IconCurrent} Эффект присутствия","presence"),
-                        },
-                        new []
-                        {
-                            InlineKeyboardButton.WithCallbackData($"{autooff.IconCurrent}        Автовыкл. света","autoshut"),
-                        },
-                        new []
-                        {
-                            InlineKeyboardButton.WithCallbackData($"{lightintight.IconCurrent}                  Свет в ночи","lightinnihgt"),
-                        },
-
-                    });
-            return inlineLight;
-        }
-
-
         private static async void BotOnCallbackQueryReceived(object sender, CallbackQueryEventArgs callbackQueryEventArgs)
         {
             var callbackQuery = callbackQueryEventArgs.CallbackQuery;
-
 
             if (callbackQuery == null || callbackQuery.Message.Type != MessageType.Text) return;
             try
@@ -276,7 +158,6 @@ namespace ConsoleTelegram
                     case "living":
                         await LightSelect(0, callbackQuery);
                         break;
-
 
                     case "study":
                         await LightSelect(1, callbackQuery);
@@ -328,19 +209,8 @@ namespace ConsoleTelegram
                 timer.Elapsed +=new ElapsedEventHandler(LightAutoOff);
                 }
             else autooff.Status = 0;
-
-            var inlineLightSetting = KeyLightMode();
-
-            await Bot.EditMessageTextAsync(
-                callbackQuery.Message.Chat.Id,
-                callbackQuery.Message.MessageId,
-                lightsetting,
-                replyMarkup: inlineLightSetting);
-        }
-
-        private static void Timer_Elapsed(object sender, ElapsedEventArgs e)
-        {
-            throw new NotImplementedException();
+            var inlineLightSetting = Views.ViewLightBot.KeyLightMode(presenceeffect,autooff,lightintight);
+            await Views.ViewLightBot.EditMessageToChat(Bot, lightsetting, callbackQuery.Message, inlineLightSetting);
         }
 
         private static async Task EditLightinNight(Telegram.Bot.Types.CallbackQuery callbackQuery)
@@ -349,22 +219,14 @@ namespace ConsoleTelegram
             if (lightintight.Status == 0) lightintight.Status = 1;
             else lightintight.Status = 0;
 
-            var inlineLightSetting = KeyLightMode();
-
-            await Bot.EditMessageTextAsync(
-                callbackQuery.Message.Chat.Id,
-                callbackQuery.Message.MessageId,
-                lightsetting,
-                replyMarkup: inlineLightSetting);
+            var inlineLightSetting = Views.ViewLightBot.KeyLightMode(presenceeffect, autooff, lightintight);
+            await Views.ViewLightBot.EditMessageToChat(Bot, lightsetting, callbackQuery.Message, inlineLightSetting);
         }
         private static async Task LightSettings(Telegram.Bot.Types.CallbackQuery callbackQuery)
         {
             string lightsetting = $@"Режимы освещения";
-            var inlineLightSetting = KeyLightMode();
-            await Bot.SendTextMessageAsync(
-                callbackQuery.Message.Chat.Id,
-                lightsetting,
-                replyMarkup: inlineLightSetting);
+            var inlineLightSetting = Views.ViewLightBot.KeyLightMode(presenceeffect, autooff, lightintight);
+            await Views.ViewLightBot.EditMessageToChat(Bot, lightsetting, callbackQuery.Message, inlineLightSetting);
         }
 
         private static async Task LightSelect(int idlamp, Telegram.Bot.Types.CallbackQuery callbackQuery)
@@ -385,23 +247,15 @@ namespace ConsoleTelegram
                 if (lamps[idlamp].Status == 0)
                 {
                         lamps[idlamp].Status = 1;
-                        //lamps[idlamp].Iconlamp = "🎾";
                 }
                 else
                 {
                     lamps[idlamp].Status = 0;
-                    //lamps[idlamp].Iconlamp = "⚪️";
                 }
             }
-            string changesleepinglamp = $@"Управление освещением";
-
-
-            var inlineLight = KeyLightInit();
-
-            await Bot.EditMessageTextAsync(callbackQuery.Message.Chat.Id,
-                callbackQuery.Message.MessageId,
-                changesleepinglamp,
-                replyMarkup: inlineLight);
+            string LightHome = $@"Управление освещением";
+            var inlineLight = Views.ViewLightBot.KeyLightInit(lamps);
+            await Views.ViewLightBot.EditMessageToChat(Bot, LightHome, callbackQuery.Message, inlineLight);
         }
 
 
@@ -455,9 +309,7 @@ namespace ConsoleTelegram
 
         private static void LightCheck(object sender, ElapsedEventArgs eventArgs)
         {
-
             Console.WriteLine("exxxyyy");
-            //SendMessageToChat(statusHome);
         }
 
         private static void LightAutoOff(object sender, ElapsedEventArgs eventArgs)
@@ -490,7 +342,7 @@ namespace ConsoleTelegram
                         msgautooff = @"Хьюстон, на улице горит свет, 
 но я не могу его выключить";
                     }
-                    SendMessageToChat(msgautooff);
+                    Views.ViewLightBot.SendOnlyMessageToChat(Bot,msgautooff);
                 }                 
                 newClient.Close();
                 
@@ -500,12 +352,7 @@ namespace ConsoleTelegram
             
         }
 
-        private static async void SendMessageToChat(string msg)
-        {
-            await Bot.SendTextMessageAsync(129973487, msg);
-            
 
-        }
     }
 }
 
