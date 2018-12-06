@@ -69,7 +69,7 @@ namespace ConsoleTelegram
 
                     timer = new Timer();
                     timer.AutoReset = true;
-                    timer.Interval = 30000;
+                    timer.Interval = 60000;
                     timer.Elapsed += new ElapsedEventHandler(LightCheck);
                     timer.Enabled = true;                   
                 
@@ -322,7 +322,11 @@ namespace ConsoleTelegram
         private static async Task EditAutoShut(Telegram.Bot.Types.CallbackQuery callbackQuery)
         {
             string lightsetting = $@"Режимы освещения";
-            if (autooff.Status == 0) autooff.Status = 1;
+            if (autooff.Status == 0)
+                {
+                autooff.Status = 1;
+                timer.Elapsed +=new ElapsedEventHandler(LightAutoOff);
+                }
             else autooff.Status = 0;
 
             var inlineLightSetting = KeyLightMode();
@@ -332,6 +336,11 @@ namespace ConsoleTelegram
                 callbackQuery.Message.MessageId,
                 lightsetting,
                 replyMarkup: inlineLightSetting);
+        }
+
+        private static void Timer_Elapsed(object sender, ElapsedEventArgs e)
+        {
+            throw new NotImplementedException();
         }
 
         private static async Task EditLightinNight(Telegram.Bot.Types.CallbackQuery callbackQuery)
@@ -446,25 +455,49 @@ namespace ConsoleTelegram
 
         private static void LightCheck(object sender, ElapsedEventArgs eventArgs)
         {
-            //TcpClient newClient = new TcpClient();
-            //newClient.Connect(Ipadress, Port);
-            //byte bt = SendCMD(newClient, lightStatus);
-            //newClient.Close();
-            string statusHome = $@"
 
-🌡 Система отопления:
-Давление в системе: 1.9 атм.
-Температура теплоносителя:  °C
-
-🚰 Система водоснабжения:
-Давление в системе: 2.3 атм.
-Температура горячей воды  °C
-
-🚽 Септик заполнен на 45%
-
-🛎 Тревожные сообщения: нет";
             Console.WriteLine("exxxyyy");
-            SendMessageToChat(statusHome);
+            //SendMessageToChat(statusHome);
+        }
+
+        private static void LightAutoOff(object sender, ElapsedEventArgs eventArgs)
+        {
+            
+            if ((DateTime.Now.TimeOfDay > autooff.TimeBegin)&&(DateTime.Now.TimeOfDay < autooff.TimeBegin.Add(new TimeSpan(0,0,1,0,0))))
+            {
+                string msgautooff;
+                byte[] lightChange = new byte[2] { 0x01, 0x00 };
+                TcpClient newClient = new TcpClient();
+                newClient.Connect(Ipadress, Port);
+                byte bt = SendCMD(newClient, lightStatus);
+
+
+                if (((bt >> 7) & 1) != 0)
+                {
+                    bt ^= (byte)(1 << 7);
+                    lightChange[1] = bt;
+                    byte btget = SendCMD(newClient, lightChange);
+                    if (bt == btget)
+                    {
+                        lamps[7].Status = 0;
+                        msgautooff = @"Вы забыли выключить свет
+на улице, но можете не беспокоится,
+я его выключил, 
+Сладких снов!!!";
+                    }
+                    else
+                    {
+                        msgautooff = @"Хьюстон, на улице горит свет, 
+но я не могу его выключить";
+                    }
+                    SendMessageToChat(msgautooff);
+                }                 
+                newClient.Close();
+                
+            }
+
+
+            
         }
 
         private static async void SendMessageToChat(string msg)

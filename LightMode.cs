@@ -24,9 +24,10 @@ namespace ConsoleTelegram
     {
         public AutoOff()
         {
-            Status = 0;
+            Status = 1;
+            TimeBegin = new TimeSpan(0, 23, 0, 0, 0);
         }
-        DateTime DateBegin { get; set; }
+        public TimeSpan TimeBegin { get; set; }
     }
 
     class LightinNight : LightMode
