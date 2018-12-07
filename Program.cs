@@ -18,8 +18,14 @@ namespace ConsoleTelegram
 {
     class Program
     {
+        const int living = 0;
+        const int study = 1;
+        const int kitchen = 2;
+        const int child = 3;
+        const int hall = 4;
+        const int bath = 5;
+        const int street = 7;
 
-        
         private static readonly TelegramBotClient Bot = new TelegramBotClient("550808830:AAERRZ0qIsXIdgMTgksg2tcA0DQeWqL3r5g");
 
         static byte[] lightStatus = new byte[2] { 0x02, 0x00 };
@@ -40,12 +46,13 @@ namespace ConsoleTelegram
         static PresenceEff presenceeffect = new PresenceEff();
         static AutoOff autooff = new AutoOff();
 
-
         static List<int> accesslist = new List<int>() { 352840946 , 129973487 };
 
 
         static IPAddress  Ipadress {get;}=IPAddress.Parse("192.168.88.10");
         static int Port { get; } = 80;
+
+        
 
         static void Main(string[] args)
         {
@@ -84,16 +91,6 @@ namespace ConsoleTelegram
             }
         }
 
-        private static byte SendCMD(TcpClient newClient,byte[] sendBytes)
-        {
-            NetworkStream tcpStream = newClient.GetStream();
-            tcpStream.Write(sendBytes, 0, sendBytes.Length);
-
-            byte[] bytes = new byte[newClient.ReceiveBufferSize];
-            int bytesRead = tcpStream.Read(bytes, 0, newClient.ReceiveBufferSize);
-            return bytes[1];
-        }
-
         private static void BotOnMessageReceived(object sender, MessageEventArgs messageEventArgs)
         {
             bool accessuser = false;
@@ -109,17 +106,16 @@ namespace ConsoleTelegram
             switch (message.Text)
             {
                 case "/start":
-                    string FirstMsg = $@"Выберите категорию";
+
                     var ReplyKeyboard = Views.ViewLightBot.MainMenu();
                     ReplyKeyboard.ResizeKeyboard = true;
-                    Views.ViewLightBot.SendKeyboartToChat(Bot, FirstMsg, message, ReplyKeyboard);
+                    Views.ViewLightBot.SendKeyboartToChat(Bot, InfoMesage.FirstMsg, message, ReplyKeyboard);
                     break;
 
                 case "🌓 Освещение":
-                    string LightHome = $@"Управление освещением";
                     TcpClient newClient = new TcpClient();
                     newClient.Connect(Ipadress, Port);
-                    byte bt =SendCMD(newClient,lightStatus);
+                    byte bt =InterfaceMK.ViaTCP.SendCMD(newClient,lightStatus);
                     newClient.Close();
 
                     for (int i = 0; i < 8; i++)
@@ -135,12 +131,11 @@ namespace ConsoleTelegram
                     }
 
                     var inlineLight =Views.ViewLightBot.KeyLightInit(lamps);
-                    Views.ViewLightBot.SendMessageToChat(Bot, LightHome, message, inlineLight);
+                    Views.ViewLightBot.SendMessageToChat(Bot, InfoMesage.Lighcontol, message, inlineLight);
                     break;
 
                     default:
-                    const string starttext = @"Usage:/start";
-                    Views.ViewLightBot.SendMessageToChat(Bot, starttext, message, null);
+                    Views.ViewLightBot.SendMessageToChat(Bot, InfoMesage.Starttext, message, null);
                     break;
             }
         }
@@ -154,37 +149,36 @@ namespace ConsoleTelegram
             {
                 switch (callbackQuery.Data)
                 {
-                    //Освещение
                     case "living":
-                        await LightSelect(0, callbackQuery);
+                        await LightSelect(living, callbackQuery);
                         break;
 
                     case "study":
-                        await LightSelect(1, callbackQuery);
+                        await LightSelect(study, callbackQuery);
                         break;
 
                     case "kitchen":
-                        await LightSelect(2, callbackQuery);
+                        await LightSelect(kitchen, callbackQuery);
                         break;
 
                     case "child":
-                        await LightSelect(3, callbackQuery);
+                        await LightSelect(child, callbackQuery);
                         break;
 
                     case "hall":
-                        await LightSelect(4, callbackQuery);
+                        await LightSelect(hall, callbackQuery);
                         break;
 
                     case "bath":
-                        await LightSelect(5, callbackQuery);
+                        await LightSelect(bath, callbackQuery);
                         break;
 
                     case "street":
-                        await LightSelect(7, callbackQuery);
+                        await LightSelect(street, callbackQuery);
                         break;
 
                     case "lightmode":
-                        await LightSettings(callbackQuery);
+                        LightSettings(callbackQuery);
                        break;
                     case "autoshut":
                         await EditAutoShut(callbackQuery);
@@ -202,7 +196,6 @@ namespace ConsoleTelegram
 
         private static async Task EditAutoShut(Telegram.Bot.Types.CallbackQuery callbackQuery)
         {
-            string lightsetting = $@"Режимы освещения";
             if (autooff.Status == 0)
                 {
                 autooff.Status = 1;
@@ -210,23 +203,21 @@ namespace ConsoleTelegram
                 }
             else autooff.Status = 0;
             var inlineLightSetting = Views.ViewLightBot.KeyLightMode(presenceeffect,autooff,lightintight);
-            await Views.ViewLightBot.EditMessageToChat(Bot, lightsetting, callbackQuery.Message, inlineLightSetting);
+            await Views.ViewLightBot.EditMessageToChat(Bot, InfoMesage.Lightmode, callbackQuery.Message, inlineLightSetting);
         }
 
         private static async Task EditLightinNight(Telegram.Bot.Types.CallbackQuery callbackQuery)
         {
-            string lightsetting = $@"Режимы освещения";
             if (lightintight.Status == 0) lightintight.Status = 1;
             else lightintight.Status = 0;
 
             var inlineLightSetting = Views.ViewLightBot.KeyLightMode(presenceeffect, autooff, lightintight);
-            await Views.ViewLightBot.EditMessageToChat(Bot, lightsetting, callbackQuery.Message, inlineLightSetting);
+            await Views.ViewLightBot.EditMessageToChat(Bot, InfoMesage.Lightmode, callbackQuery.Message, inlineLightSetting);
         }
-        private static async Task LightSettings(Telegram.Bot.Types.CallbackQuery callbackQuery)
+        private static void LightSettings(Telegram.Bot.Types.CallbackQuery callbackQuery)
         {
-            string lightsetting = $@"Режимы освещения";
             var inlineLightSetting = Views.ViewLightBot.KeyLightMode(presenceeffect, autooff, lightintight);
-            await Views.ViewLightBot.EditMessageToChat(Bot, lightsetting, callbackQuery.Message, inlineLightSetting);
+            Views.ViewLightBot.SendMessageToChat(Bot, InfoMesage.Lightmode, callbackQuery.Message, inlineLightSetting);
         }
 
         private static async Task LightSelect(int idlamp, Telegram.Bot.Types.CallbackQuery callbackQuery)
@@ -235,12 +226,10 @@ namespace ConsoleTelegram
             byte[] lightChange = new byte[2] { 0x01, 0x00 };
 
             newClient.Connect(Ipadress, Port);
-            byte bt = SendCMD(newClient,lightStatus);
-            
+            byte bt = InterfaceMK.ViaTCP.SendCMD(newClient,lightStatus);
             bt ^= (byte)(1 << idlamp);
-
             lightChange[1] = bt;
-            byte btget = SendCMD(newClient,lightChange);
+            byte btget = InterfaceMK.ViaTCP.SendCMD(newClient,lightChange);
             newClient.Close();
             if (bt == btget)
             {
@@ -253,11 +242,9 @@ namespace ConsoleTelegram
                     lamps[idlamp].Status = 0;
                 }
             }
-            string LightHome = $@"Управление освещением";
             var inlineLight = Views.ViewLightBot.KeyLightInit(lamps);
-            await Views.ViewLightBot.EditMessageToChat(Bot, LightHome, callbackQuery.Message, inlineLight);
+            await Views.ViewLightBot.EditMessageToChat(Bot, InfoMesage.Lighcontol, callbackQuery.Message, inlineLight);
         }
-
 
         private static async void BotOnInlineQueryReceived(object sender, InlineQueryEventArgs inlineQueryEventArgs)
         {
@@ -321,38 +308,27 @@ namespace ConsoleTelegram
                 byte[] lightChange = new byte[2] { 0x01, 0x00 };
                 TcpClient newClient = new TcpClient();
                 newClient.Connect(Ipadress, Port);
-                byte bt = SendCMD(newClient, lightStatus);
-
+                byte bt = InterfaceMK.ViaTCP.SendCMD(newClient, lightStatus);
 
                 if (((bt >> 7) & 1) != 0)
                 {
                     bt ^= (byte)(1 << 7);
                     lightChange[1] = bt;
-                    byte btget = SendCMD(newClient, lightChange);
+                    byte btget = InterfaceMK.ViaTCP.SendCMD(newClient, lightChange);
                     if (bt == btget)
                     {
                         lamps[7].Status = 0;
-                        msgautooff = @"Вы забыли выключить свет
-на улице, но можете не беспокоится,
-я его выключил, 
-Сладких снов!!!";
+                        msgautooff = InfoMesage.AutoOffSuccess;
                     }
                     else
                     {
-                        msgautooff = @"Хьюстон, на улице горит свет, 
-но я не могу его выключить";
+                        msgautooff = InfoMesage.AutoOffFail;
                     }
                     Views.ViewLightBot.SendOnlyMessageToChat(Bot,msgautooff);
                 }                 
-                newClient.Close();
-                
+                newClient.Close();                
             }
-
-
-            
         }
-
-
     }
 }
 

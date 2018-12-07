@@ -54,6 +54,8 @@
   <ItemGroup>
     <Compile Include="ComPort.cs" />
     <Compile Include="Device.cs" />
+    <Compile Include="InfoMesage.cs" />
+    <Compile Include="InterfaceMK\ViaTCP.cs" />
     <Compile Include="JarvisDAL.cs" />
     <Compile Include="Lamp.cs" />
     <Compile Include="LightMode.cs" />
@@ -65,9 +67,7 @@
     <None Include="App.config" />
     <None Include="packages.config" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="InterfaceMK\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
