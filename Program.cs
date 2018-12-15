@@ -12,6 +12,7 @@ using System.Net.Sockets;
 using System.Net;
 using System.Threading;
 using System.Timers;
+using APIXULib;
 using Timer = System.Timers.Timer;
 
 namespace ConsoleTelegram
@@ -26,7 +27,12 @@ namespace ConsoleTelegram
         const int bath = 5;
         const int street = 7;
 
+
         private static readonly TelegramBotClient Bot = new TelegramBotClient("550808830:AAERRZ0qIsXIdgMTgksg2tcA0DQeWqL3r5g");
+
+        private static string keyWeather = "8c91b7d149734b338f0142551181312";
+        static IRepository repo = new Repository();
+        static string country = "Chikcha";
 
         static byte[] lightStatus = new byte[2] { 0x02, 0x00 };
         static Timer timer;
@@ -48,8 +54,18 @@ namespace ConsoleTelegram
 
         static List<int> accesslist = new List<int>() { 352840946 , 129973487 };
 
+        static List<Climate> climates = new List<Climate>
+        {
+            new Climate { NumSensor=0},
+            new Climate { NumSensor=1},
+        };
+
 
         static IPAddress  Ipadress {get;}=IPAddress.Parse("192.168.88.10");
+
+        
+
+        static string PortCOM { get; } = "COM3";
         static int Port { get; } = 80;
 
         
@@ -134,7 +150,22 @@ namespace ConsoleTelegram
                     Views.ViewLightBot.SendMessageToChat(Bot, InfoMesage.Lighcontol, message, inlineLight);
                     break;
 
-                    default:
+                case "⛈ Климат":
+
+                    foreach (var item in climates)
+                    {
+                        string timeandhum = InterfaceMK.ViaCOM.SendtoCOM(PortCOM, item.NumSensor);
+                        item.SetClimate(timeandhum);
+
+                    }
+                    var GetCurrentWeather= repo.GetWeatherData(keyWeather, GetBy.CityName, country);
+
+                    InfoMesage.SetInfoClimate(climates,GetCurrentWeather.current.temp_c, GetCurrentWeather.current.humidity,Convert.ToInt32(GetCurrentWeather.current.wind_kph/3.6));
+                    
+                    Views.ViewLightBot.SendMessageToChat(Bot, InfoMesage.StatusClimate, message, null);
+                    break;
+
+                default:
                     Views.ViewLightBot.SendMessageToChat(Bot, InfoMesage.Starttext, message, null);
                     break;
             }

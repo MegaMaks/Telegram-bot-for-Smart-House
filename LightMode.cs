@@ -3,12 +3,8 @@ using System.Collections.Generic;
 
 namespace ConsoleTelegram
 {
-    class LightMode: Device
-    {
-        List<Lamp> selectedlamps = new List<Lamp>();
-    }
 
-    class PresenceEff:LightMode
+    class PresenceEff: Device
     {
         public PresenceEff()
         {
@@ -20,7 +16,7 @@ namespace ConsoleTelegram
         
     }
 
-    class AutoOff : LightMode
+    class AutoOff : Device
     {
         public AutoOff()
         {
@@ -30,7 +26,7 @@ namespace ConsoleTelegram
         public TimeSpan TimeBegin { get; set; }
     }
 
-    class LightinNight : LightMode
+    class LightinNight : Device
     {
         public LightinNight()
         {

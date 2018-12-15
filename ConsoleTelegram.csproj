@@ -33,18 +33,22 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="APIXULib">
+      <HintPath>C:\Users\User\Documents\Visual Studio 2015\Projects\COMtest2\COMtest2\bin\Debug\APIXULib.dll</HintPath>
+    </Reference>
     <Reference Include="Newtonsoft.Json, Version=11.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\Newtonsoft.Json.11.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
-      <Private>True</Private>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.configuration" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
-    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Net.Http">
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System.Xml" />
     <Reference Include="Telegram.Bot, Version=14.4.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Telegram.Bot.14.4.0\lib\net45\Telegram.Bot.dll</HintPath>
@@ -52,9 +56,11 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Climate.cs" />
     <Compile Include="ComPort.cs" />
     <Compile Include="Device.cs" />
     <Compile Include="InfoMesage.cs" />
+    <Compile Include="InterfaceMK\ViaCOM.cs" />
     <Compile Include="InterfaceMK\ViaTCP.cs" />
     <Compile Include="JarvisDAL.cs" />
     <Compile Include="Lamp.cs" />
