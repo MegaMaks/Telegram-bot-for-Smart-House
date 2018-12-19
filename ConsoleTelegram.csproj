@@ -36,11 +36,20 @@
     <Reference Include="APIXULib">
       <HintPath>C:\Users\User\Documents\Visual Studio 2015\Projects\COMtest2\COMtest2\bin\Debug\APIXULib.dll</HintPath>
     </Reference>
+    <Reference Include="EntityFramework, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
+      <HintPath>..\packages\EntityFramework.6.2.0\lib\net45\EntityFramework.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="EntityFramework.SqlServer, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
+      <HintPath>..\packages\EntityFramework.6.2.0\lib\net45\EntityFramework.SqlServer.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="Newtonsoft.Json, Version=11.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\Newtonsoft.Json.11.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.ComponentModel.DataAnnotations" />
     <Reference Include="System.configuration" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -57,14 +66,18 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Climate.cs" />
-    <Compile Include="ComPort.cs" />
-    <Compile Include="Device.cs" />
+    <Compile Include="IKeyboardMarkup.cs" />
+    <Compile Include="Model\Device.cs" />
     <Compile Include="InfoMesage.cs" />
     <Compile Include="InterfaceMK\ViaCOM.cs" />
     <Compile Include="InterfaceMK\ViaTCP.cs" />
     <Compile Include="JarvisDAL.cs" />
-    <Compile Include="Lamp.cs" />
-    <Compile Include="LightMode.cs" />
+    <Compile Include="Model\Lamp.cs" />
+    <Compile Include="Model\LampConfiguration.cs" />
+    <Compile Include="Model\LightMode.cs" />
+    <Compile Include="Model\SmartContext.cs" />
+    <Compile Include="Model\SmartHouseDbFill.cs" />
+    <Compile Include="Model\SmartHouseDbInit.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Views\ViewLightBot.cs" />

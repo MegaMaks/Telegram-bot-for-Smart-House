@@ -19,40 +19,22 @@ namespace ConsoleTelegram
 {
     class Program
     {
-        const int living = 0;
-        const int study = 1;
-        const int kitchen = 2;
-        const int child = 3;
-        const int hall = 4;
-        const int bath = 5;
-        const int street = 7;
 
 
-        private static readonly TelegramBotClient Bot = new TelegramBotClient("550808830:AAERRZ0qIsXIdgMTgksg2tcA0DQeWqL3r5g");
+        private static readonly TelegramBotClient Bot = new TelegramBotClient("1111111111111111111111111111111111");
 
-        private static string keyWeather = "8c91b7d149734b338f0142551181312";
+        private static string keyWeather = "1111111111111111111111111111";
         static IRepository repo = new Repository();
-        static string country = "Chikcha";
+        static string country = "11111111";
 
         static byte[] lightStatus = new byte[2] { 0x02, 0x00 };
         static Timer timer;
 
-        static List<Lamp> lamps = new List<Lamp>
-        {
-            new Lamp(),
-            new Lamp(),
-            new Lamp(),
-            new Lamp(),
-            new Lamp(),
-            new Lamp(),
-            new Lamp(),
-            new Lamp(),
-        };
+
         static LightinNight lightintight = new LightinNight();
         static PresenceEff presenceeffect = new PresenceEff();
-        static AutoOff autooff = new AutoOff();
 
-        static List<int> accesslist = new List<int>() { 352840946 , 129973487 };
+        static List<int> accesslist = new List<int>() { TelegramUsersID };
 
         static List<Climate> climates = new List<Climate>
         {
@@ -61,7 +43,7 @@ namespace ConsoleTelegram
         };
 
 
-        static IPAddress  Ipadress {get;}=IPAddress.Parse("192.168.88.10");
+        static IPAddress  Ipadress {get;}=IPAddress.Parse("IP Adress");
 
         
 
@@ -72,6 +54,8 @@ namespace ConsoleTelegram
 
         static void Main(string[] args)
         {
+            //Comment the line below afte DB init and filling
+            //Model.SmartHouseDbFill.DbInit();
             while (true)
             {
                 try
@@ -82,30 +66,32 @@ namespace ConsoleTelegram
                     Bot.OnMessage += BotOnMessageReceived;
                     Bot.OnMessageEdited += BotOnMessageReceived;
                     Bot.OnCallbackQuery += BotOnCallbackQueryReceived;
-                    Bot.OnInlineQuery += BotOnInlineQueryReceived;
+                    //Bot.OnInlineQuery += BotOnInlineQueryReceived;
                     Bot.OnInlineResultChosen += BotOnChosenInlineResultReceived;
                     Bot.OnReceiveError += BotOnReceiveError;
 
                     Bot.StartReceiving();
-                    Console.WriteLine($"Start listening for @{me.Username}");
+                    Console.WriteLine($"Start SmartHome for @{me.Username}");
 
                     timer = new Timer();
                     timer.AutoReset = true;
                     timer.Interval = 60000;
                     timer.Elapsed += new ElapsedEventHandler(LightCheck);
-                    timer.Enabled = true;                   
-                
+                    timer.Enabled = true;
+
                     Console.ReadLine();
                     Bot.StopReceiving();
                 }
-                catch(Exception e)
+                catch (Exception e)
                 {
                     Console.WriteLine(e.ToString());
                     Thread.Sleep(10000);
-                    
+
                 }
             }
         }
+
+
 
         private static void BotOnMessageReceived(object sender, MessageEventArgs messageEventArgs)
         {
@@ -138,17 +124,18 @@ namespace ConsoleTelegram
                     {
                         if (((bt >> i) & 1) != 0)
                         {
-                            lamps[i].Status = 1;
+                            Model.SmartHouseDbFill.lamps[i].Status = 1;
                         }
                         else
                         {
-                            lamps[i].Status = 0;
+                            Model.SmartHouseDbFill.lamps[i].Status = 0;
                         }
                     }
 
-                    var inlineLight =Views.ViewLightBot.KeyLightInit(lamps);
+                    var inlineLight =Views.ViewLightBot.KeyLightInit(Model.SmartHouseDbFill.lamps);
                     Views.ViewLightBot.SendMessageToChat(Bot, InfoMesage.Lighcontol, message, inlineLight);
                     break;
+
 
                 case "⛈ Климат":
 
@@ -168,56 +155,48 @@ namespace ConsoleTelegram
                 default:
                     Views.ViewLightBot.SendMessageToChat(Bot, InfoMesage.Starttext, message, null);
                     break;
+
+                case "🛡 Безопасность":
+                    Views.ViewLightBot.SendPhotoToChat(Bot, message);
+                    break;
             }
         }
 
         private static async void BotOnCallbackQueryReceived(object sender, CallbackQueryEventArgs callbackQueryEventArgs)
         {
             var callbackQuery = callbackQueryEventArgs.CallbackQuery;
+            bool accessuser = false;
 
-            if (callbackQuery == null || callbackQuery.Message.Type != MessageType.Text) return;
+            foreach (var item in accesslist)
+            {
+                if (callbackQuery.From.Id == item) accessuser = true;
+            }
+            
+            if (callbackQuery == null || callbackQuery.Message.Type != MessageType.Text|| accessuser == false) return;
             try
             {
-                switch (callbackQuery.Data)
+                var lampcmd = Model.SmartHouseDbFill.lamps.Find(x => x.Command.Contains(callbackQuery.Data));
+
+                if (lampcmd != null)
                 {
-                    case "living":
-                        await LightSelect(living, callbackQuery);
-                        break;
-
-                    case "study":
-                        await LightSelect(study, callbackQuery);
-                        break;
-
-                    case "kitchen":
-                        await LightSelect(kitchen, callbackQuery);
-                        break;
-
-                    case "child":
-                        await LightSelect(child, callbackQuery);
-                        break;
-
-                    case "hall":
-                        await LightSelect(hall, callbackQuery);
-                        break;
-
-                    case "bath":
-                        await LightSelect(bath, callbackQuery);
-                        break;
-
-                    case "street":
-                        await LightSelect(street, callbackQuery);
-                        break;
-
-                    case "lightmode":
-                        LightSettings(callbackQuery);
-                       break;
-                    case "autoshut":
-                        await EditAutoShut(callbackQuery);
-                        break;
-                    case "lightinnihgt":
-                        await EditLightinNight(callbackQuery);
-                        break;
+                    await LightSelect(lampcmd.Number, callbackQuery);
                 }
+                else
+                {
+                    switch (callbackQuery.Data)
+                    {
+                        case "lightmode":
+                            LightSettings(callbackQuery);
+                            break;
+                        case "autoshut":
+                            await EditAutoShut(callbackQuery);
+                            break;
+                        case "lightinnihgt":
+                            await EditLightinNight(callbackQuery);
+                            break;
+                    }
+                }
+
             }
             catch
             {
@@ -227,27 +206,31 @@ namespace ConsoleTelegram
 
         private static async Task EditAutoShut(Telegram.Bot.Types.CallbackQuery callbackQuery)
         {
-            if (autooff.Status == 0)
-                {
-                autooff.Status = 1;
-                timer.Elapsed +=new ElapsedEventHandler(LightAutoOff);
-                }
-            else autooff.Status = 0;
-            var inlineLightSetting = Views.ViewLightBot.KeyLightMode(presenceeffect,autooff,lightintight);
-            await Views.ViewLightBot.EditMessageToChat(Bot, InfoMesage.Lightmode, callbackQuery.Message, inlineLightSetting);
+
+            var inlineLightSetting = Views.ViewLightBot.KeyboardLightModeAutoOff(Model.SmartHouseDbFill.lamps, Model.SmartHouseDbFill.autooff);
+            Views.ViewLightBot.SendMessageToChat(Bot, InfoMesage.Lightmode, callbackQuery.Message, inlineLightSetting);
+
+            //if (autooff.Status == false)
+            //    {
+            //    autooff.Status = true;
+            //    timer.Elapsed +=new ElapsedEventHandler(LightAutoOff);
+            //    }
+            //else autooff.Status = false;
+            //var inlineLightSetting = Views.ViewLightBot.KeyLightMode(presenceeffect,autooff,lightintight);
+            //await Views.ViewLightBot.EditMessageToChat(Bot, InfoMesage.Lightmode, callbackQuery.Message, inlineLightSetting);
         }
 
         private static async Task EditLightinNight(Telegram.Bot.Types.CallbackQuery callbackQuery)
         {
-            if (lightintight.Status == 0) lightintight.Status = 1;
-            else lightintight.Status = 0;
+            if (lightintight.Status == false) lightintight.Status = true;
+            else lightintight.Status = false;
 
-            var inlineLightSetting = Views.ViewLightBot.KeyLightMode(presenceeffect, autooff, lightintight);
-            await Views.ViewLightBot.EditMessageToChat(Bot, InfoMesage.Lightmode, callbackQuery.Message, inlineLightSetting);
+            //var inlineLightSetting = Views.ViewLightBot.KeyLightMode(presenceeffect, autooff, lightintight);
+            //await Views.ViewLightBot.EditMessageToChat(Bot, InfoMesage.Lightmode, callbackQuery.Message, inlineLightSetting);
         }
         private static void LightSettings(Telegram.Bot.Types.CallbackQuery callbackQuery)
         {
-            var inlineLightSetting = Views.ViewLightBot.KeyLightMode(presenceeffect, autooff, lightintight);
+            var inlineLightSetting = Views.ViewLightBot.KeyLightMode(presenceeffect, lightintight);
             Views.ViewLightBot.SendMessageToChat(Bot, InfoMesage.Lightmode, callbackQuery.Message, inlineLightSetting);
         }
 
@@ -264,53 +247,17 @@ namespace ConsoleTelegram
             newClient.Close();
             if (bt == btget)
             {
-                if (lamps[idlamp].Status == 0)
+                if (Model.SmartHouseDbFill.lamps[idlamp].Status == 0)
                 {
-                        lamps[idlamp].Status = 1;
+                    Model.SmartHouseDbFill.lamps[idlamp].Status = 1;
                 }
                 else
                 {
-                    lamps[idlamp].Status = 0;
+                    Model.SmartHouseDbFill.lamps[idlamp].Status = 0;
                 }
             }
-            var inlineLight = Views.ViewLightBot.KeyLightInit(lamps);
+            var inlineLight = Views.ViewLightBot.KeyLightInit(Model.SmartHouseDbFill.lamps);
             await Views.ViewLightBot.EditMessageToChat(Bot, InfoMesage.Lighcontol, callbackQuery.Message, inlineLight);
-        }
-
-        private static async void BotOnInlineQueryReceived(object sender, InlineQueryEventArgs inlineQueryEventArgs)
-        {
-            Console.WriteLine($"Received inline query from: {inlineQueryEventArgs.InlineQuery.From.Id}");
-
-            InlineQueryResultBase[] results = {
-                new InlineQueryResultLocation(
-                    id: "1",
-                    latitude: 40.7058316f,
-                    longitude: -74.2581888f,
-                    title: "New York")   // displayed result
-                    {
-                        InputMessageContent = new InputLocationMessageContent(
-                            latitude: 40.7058316f,
-                            longitude: -74.2581888f)    // message if result is selected
-                    },
-
-                new InlineQueryResultLocation(
-                    id: "2",
-                    latitude: 13.1449577f,
-                    longitude: 52.507629f,
-                    title: "Berlin") // displayed result
-                    {
-
-                        InputMessageContent = new InputLocationMessageContent(
-                            latitude: 13.1449577f,
-                            longitude: 52.507629f)   // message if result is selected
-                    }
-            };
-
-            await Bot.AnswerInlineQueryAsync(
-                inlineQueryEventArgs.InlineQuery.Id,
-                results,
-                isPersonal: true,
-                cacheTime: 0);
         }
 
         private static void BotOnChosenInlineResultReceived(object sender, ChosenInlineResultEventArgs chosenInlineResultEventArgs)
@@ -333,32 +280,32 @@ namespace ConsoleTelegram
         private static void LightAutoOff(object sender, ElapsedEventArgs eventArgs)
         {
             
-            if ((DateTime.Now.TimeOfDay > autooff.TimeBegin)&&(DateTime.Now.TimeOfDay < autooff.TimeBegin.Add(new TimeSpan(0,0,1,0,0))))
-            {
-                string msgautooff;
-                byte[] lightChange = new byte[2] { 0x01, 0x00 };
-                TcpClient newClient = new TcpClient();
-                newClient.Connect(Ipadress, Port);
-                byte bt = InterfaceMK.ViaTCP.SendCMD(newClient, lightStatus);
+            //if ((DateTime.Now.TimeOfDay > autooff.TimeBegin)&&(DateTime.Now.TimeOfDay < autooff.TimeBegin.Add(new TimeSpan(0,0,1,0,0))))
+            //{
+                //string msgautooff;
+                //byte[] lightChange = new byte[2] { 0x01, 0x00 };
+                //TcpClient newClient = new TcpClient();
+                //newClient.Connect(Ipadress, Port);
+                //byte bt = InterfaceMK.ViaTCP.SendCMD(newClient, lightStatus);
 
-                if (((bt >> 7) & 1) != 0)
-                {
-                    bt ^= (byte)(1 << 7);
-                    lightChange[1] = bt;
-                    byte btget = InterfaceMK.ViaTCP.SendCMD(newClient, lightChange);
-                    if (bt == btget)
-                    {
-                        lamps[7].Status = 0;
-                        msgautooff = InfoMesage.AutoOffSuccess;
-                    }
-                    else
-                    {
-                        msgautooff = InfoMesage.AutoOffFail;
-                    }
-                    Views.ViewLightBot.SendOnlyMessageToChat(Bot,msgautooff);
-                }                 
-                newClient.Close();                
-            }
+                //if (((bt >> 7) & 1) != 0)
+                //{
+                //    bt ^= (byte)(1 << 7);
+                //    lightChange[1] = bt;
+                //    byte btget = InterfaceMK.ViaTCP.SendCMD(newClient, lightChange);
+                //    if (bt == btget)
+                //    {
+                //        lamps[7].Status = 0;
+                //        msgautooff = InfoMesage.AutoOffSuccess;
+                //    }
+                //    else
+                //    {
+                //        msgautooff = InfoMesage.AutoOffFail;
+                //    }
+                //    Views.ViewLightBot.SendOnlyMessageToChat(Bot,msgautooff);
+                //}                 
+                //newClient.Close();                
+            //}
         }
     }
 }

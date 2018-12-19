@@ -8,6 +8,8 @@ using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.InlineQueryResults;
 using Telegram.Bot.Types.ReplyMarkups;
 using Telegram.Bot;
+using System.IO;
+using System.Net;
 
 namespace ConsoleTelegram.Views
 {
@@ -24,7 +26,7 @@ namespace ConsoleTelegram.Views
             return ReplyKeyboard;
         }
 
-        public static InlineKeyboardMarkup KeyLightMode(PresenceEff presenceeffect, AutoOff autooff, LightinNight lightintight)
+        public static InlineKeyboardMarkup KeyLightMode(PresenceEff presenceeffect, LightinNight lightintight)
         {
             var inlineLight = new InlineKeyboardMarkup(new[]
 {
@@ -34,7 +36,7 @@ namespace ConsoleTelegram.Views
                         },
                         new []
                         {
-                            InlineKeyboardButton.WithCallbackData($"{autooff.IconCurrent}        Автовыкл. света","autoshut"),
+                            InlineKeyboardButton.WithCallbackData($"        Автовыкл. света","autoshut"),
                         },
                         new []
                         {
@@ -45,35 +47,73 @@ namespace ConsoleTelegram.Views
             return inlineLight;
         }
 
-        public static InlineKeyboardMarkup KeyLightInit(List<Lamp> lamps)
+        public static InlineKeyboardMarkup KeyLightInit(List<Lamp> lamp)
         {
             var inlineLight = new InlineKeyboardMarkup(new[]
-{
-                        new []
-                        {
+            {
+                        lamp.Where(item=>item.NumberLineKeyboard==1).Select(item=>InlineKeyboardButton.WithCallbackData(item.IconCurrent+item.Name,item.Command)),
+                        lamp.Where(item=>item.NumberLineKeyboard==2).Select(item=>InlineKeyboardButton.WithCallbackData(item.IconCurrent+item.Name,item.Command)),
+                        lamp.Where(item=>item.NumberLineKeyboard==3).Select(item=>InlineKeyboardButton.WithCallbackData(item.IconCurrent+item.Name,item.Command)),
+                        lamp.Where(item=>item.NumberLineKeyboard==4).Select(item=>InlineKeyboardButton.WithCallbackData(item.IconCurrent+item.Name,item.Command)),
 
-                            InlineKeyboardButton.WithCallbackData($"{lamps[0].IconCurrent} Гостинная","living"),
-                            InlineKeyboardButton.WithCallbackData($"{lamps[1].IconCurrent}   Кабинет","study"),
-                        },
-                        new []
-                        {
-                            InlineKeyboardButton.WithCallbackData($"{lamps[2].IconCurrent}         Кухня","kitchen"),
-                            InlineKeyboardButton.WithCallbackData($"{lamps[3].IconCurrent}   Детская","child"),
-                        },
-                        new []
-                        {
-                            InlineKeyboardButton.WithCallbackData($"{lamps[4].IconCurrent}   Коридор","hall"),
-                            InlineKeyboardButton.WithCallbackData($"{lamps[5].IconCurrent}    Ванная","bath"),
-                        },
-                        new []
-                        {
-                            InlineKeyboardButton.WithCallbackData($"{lamps[6].IconCurrent} Прихожая","nobody"),
-                            InlineKeyboardButton.WithCallbackData($"{lamps[7].IconCurrent} Уличный","street"),
-                        },
                         new []
                         {
                             InlineKeyboardButton.WithCallbackData($"💡 Режимы освещения","lightmode"),
                         },
+
+            });
+            return inlineLight;
+
+        }
+
+        public static InlineKeyboardMarkup KeyboardLightModeAutoOff(List<Lamp> lamps, List<AutoOffMode> autooff)
+        {
+            var inlineLight = new InlineKeyboardMarkup(new[]
+                 {
+                        new []
+                        {
+                            InlineKeyboardButton.WithCallbackData(autooff[0].IconCurrent+lamps[0].Name,autooff[0].Command),
+                            InlineKeyboardButton.WithCallbackData(autooff[0].TimeBegin.ToString(),"changetime"+autooff[0].AutoOffModeID),
+                        },
+
+                        new []
+                        {
+                            InlineKeyboardButton.WithCallbackData(autooff[1].IconCurrent+lamps[1].Name,autooff[1].Command),
+                            InlineKeyboardButton.WithCallbackData(autooff[1].TimeBegin.ToString(),"changetime"+autooff[0].AutoOffModeID),
+                        },
+                        new []
+                        {
+                            InlineKeyboardButton.WithCallbackData(autooff[2].IconCurrent+lamps[2].Name,autooff[2].Command),
+                            InlineKeyboardButton.WithCallbackData(autooff[2].TimeBegin.ToString(),"changetime"+autooff[0].AutoOffModeID),
+                        },
+                        new []
+                        {
+                            InlineKeyboardButton.WithCallbackData(autooff[4].IconCurrent+lamps[3].Name,autooff[3].Command),
+                            InlineKeyboardButton.WithCallbackData(autooff[4].TimeBegin.ToString(),"changetime"+autooff[0].AutoOffModeID),
+                        },
+                        new []
+                        {
+                            InlineKeyboardButton.WithCallbackData(autooff[5].IconCurrent+lamps[5].Name,autooff[5].Command),
+                            InlineKeyboardButton.WithCallbackData(autooff[5].TimeBegin.ToString(),"changetime"+autooff[0].AutoOffModeID),
+                        },
+                        new []
+                        {
+                            InlineKeyboardButton.WithCallbackData(autooff[6].IconCurrent+lamps[6].Name,autooff[6].Command),
+                            InlineKeyboardButton.WithCallbackData(autooff[6].TimeBegin.ToString(),"changetime"+autooff[0].AutoOffModeID),
+                        },
+                        new []
+                        {
+                            InlineKeyboardButton.WithCallbackData(autooff[7].IconCurrent+lamps[7].Name,autooff[7].Command),
+                            InlineKeyboardButton.WithCallbackData(autooff[7].TimeBegin.ToString(),"changetime"+autooff[0].AutoOffModeID),
+                        },
+                        new []
+                        {
+                            InlineKeyboardButton.WithCallbackData(autooff[8].IconCurrent+lamps[8].Name,autooff[8].Command),
+                            InlineKeyboardButton.WithCallbackData(autooff[8].TimeBegin.ToString(),"changetime"+autooff[0].AutoOffModeID),
+                        },
+
+
+
 
                     });
             return inlineLight;
@@ -109,6 +149,39 @@ namespace ConsoleTelegram.Views
             message.Chat.Id,
             stringmsg,
             replyMarkup:replykeyboard);
+        }
+
+        public static async void SendPhotoToChat(TelegramBotClient Bot, Telegram.Bot.Types.Message message)
+        {
+            NetworkCredential myCred = new NetworkCredential("admin", "");
+            CredentialCache credsCache = new CredentialCache();
+
+            credsCache.Add(new Uri("http://192.168.88.234/dms.jpg"), "Basic", myCred);
+
+            WebRequest wr = WebRequest.Create("http://192.168.88.234/dms.jpg");
+            wr.Credentials = credsCache;
+            var resp = wr.GetResponse();
+            var stream = resp.GetResponseStream();
+
+            await Bot.SendChatActionAsync(message.Chat.Id, ChatAction.UploadPhoto);
+
+            
+
+            //WebClient webClient = new WebClient();
+            //webClient.DownloadFile("http://192.168.88.234/dms.jpg", @"123.png");
+
+            const string file = @"123.png";
+
+            var fileName = file.Split(Path.DirectorySeparatorChar).Last();
+
+            using (var fileStream = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.Read))
+            {
+             await Bot.SendPhotoAsync(
+                    message.Chat.Id,
+                    stream,
+                    "Прихожая");
+            }
+            
         }
 
     }
